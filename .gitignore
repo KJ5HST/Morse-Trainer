@@ -1,0 +1,22 @@
+# PlatformIO
+.pio/
+
+# Gradle
+tools/MorseClient/.gradle/
+tools/MorseClient/build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/
+
+# Session logs
+morse_session_*.csv

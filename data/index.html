@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Morse Trainer</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1>Morse Trainer</h1>
+        <span id="connection-status" class="status disconnected">Disconnected</span>
+    </header>
+
+    <main>
+        <!-- Setup Panel -->
+        <section id="setup-panel" class="panel">
+            <h2>Setup</h2>
+            <div class="form-row">
+                <label for="profile-select">Profile:</label>
+                <select id="profile-select">
+                    <option value="0">P0 — Saved Probabilities</option>
+                    <option value="1" selected>P1 — All Letters (even)</option>
+                    <option value="2">P2 — German Frequency</option>
+                    <option value="3">P3 — Numbers Only</option>
+                    <option value="4">P4 — Punctuation</option>
+                    <option value="5">P5 — Letters + Punctuation</option>
+                    <option value="6">P6 — Beginner 1 (A,E,M,N,T)</option>
+                    <option value="7">P7 — Beginner 2 (10 chars)</option>
+                    <option value="8">P8 — Beginner 3 (15 chars)</option>
+                    <option value="9">P9 — Beginner 4 (20 chars)</option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label for="speed-input">Speed (WPM):</label>
+                <input type="number" id="speed-input" min="20" max="200" value="25">
+            </div>
+            <div class="form-row">
+                <button id="start-btn" class="btn btn-primary">Start Training</button>
+                <button id="stop-btn" class="btn btn-danger" disabled>Stop</button>
+            </div>
+        </section>
+
+        <!-- Training Panel -->
+        <section id="training-panel" class="panel">
+            <h2>Training</h2>
+            <div class="stats-row">
+                <div class="stat">
+                    <span class="stat-label">Speed</span>
+                    <span id="current-speed" class="stat-value">25</span>
+                    <span class="stat-unit">WPM</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Correct</span>
+                    <span id="correct-count" class="stat-value">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Wrong</span>
+                    <span id="wrong-count" class="stat-value">0</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-label">Accuracy</span>
+                    <span id="accuracy" class="stat-value">—</span>
+                    <span class="stat-unit">%</span>
+                </div>
+            </div>
+
+            <!-- Sent characters -->
+            <div id="morse-display">
+                <div id="sent-chars"></div>
+            </div>
+
+            <!-- Result feed -->
+            <div id="result-feed"></div>
+        </section>
+
+        <!-- Probability Heatmap -->
+        <section id="heatmap-panel" class="panel">
+            <h2>Character Probabilities</h2>
+            <div id="heatmap"></div>
+        </section>
+    </main>
+
+    <script src="app.js"></script>
+</body>
+</html>

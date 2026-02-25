@@ -1,0 +1,37 @@
+plugins {
+    id 'java'
+    id 'application'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    implementation 'com.fazecast:jSerialComm:2.10.4'
+}
+
+application {
+    mainClass = 'morsetrainer.MorseClient'
+}
+
+run {
+    standardInput = System.in
+}
+
+// Fat JAR with all dependencies bundled
+jar {
+    manifest {
+        attributes 'Main-Class': 'morsetrainer.MorseClient'
+    }
+    from {
+        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
+    }
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    archiveFileName = 'MorseClient.jar'
+}
