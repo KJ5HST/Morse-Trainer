@@ -77,7 +77,12 @@ OPTION C: PlatformIO CLI
 STEP 2: RUN THE DESKTOP CLIENT
 -------------------------------
 Prerequisites:
-  - Java 11+  https://adoptium.net (pick "Latest LTS", Windows x64 .msi)
+  - Java 11+  https://adoptium.net
+    Pick "Latest LTS" and select the correct architecture:
+      Windows x64 .msi   - for Intel or AMD processors (most PCs)
+      Windows aarch64     - for ARM processors (Surface Pro X, etc.)
+    If you get an error about "arm" or wrong architecture, you
+    downloaded the wrong one. Uninstall and get x64 instead.
 
 Steps:
   1. Open the MorseClient folder
@@ -115,6 +120,11 @@ TROUBLESHOOTING
 ---------------
   "Java not found"
     Install Java 11+ from https://adoptium.net
+
+  Error about "arm" or wrong architecture
+    You installed the wrong Java version. Most Windows PCs need x64.
+    Uninstall the ARM version, then download the x64 .msi from:
+    https://adoptium.net
 
   Serial port not listed
     Install the USB-serial driver (CH340 or CP2102, see above)
