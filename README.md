@@ -1,12 +1,9 @@
+![OLED](images/oled.png)
 # ESP8266 Morse Trainer
 
 An adaptive Morse code trainer for the ESP8266 (NodeMCU). It sends random characters as audible Morse code, accepts your typed responses, and dynamically adjusts which characters appear and how fast they're sent based on your accuracy.
 
 Ported from [SensorsIot/Morse-Trainer](https://github.com/SensorsIot/Morse-Trainer) (Arduino) to ESP8266 with a web UI and serial interface.
-
-| OLED Display | Web UI | Desktop Client |
-|:---:|:---:|:---:|
-| ![OLED](images/oled.png) | ![Web UI](images/browser.png) | ![Desktop Client](images/client.png) |
 
 ## Hardware
 
@@ -377,6 +374,7 @@ Connect at **115200 baud**. Commands:
 During training, just type characters to respond — no Enter needed.
 
 ### Web UI
+![Web UI](images/browser.png)
 
 1. Connect to the **MorseTrainer** WiFi network (password: `morsecode`)
 2. Open a browser to **http://192.168.4.1** (or http://morse.local if mDNS works on your OS)
@@ -390,6 +388,7 @@ The web UI has:
 - Character probability heatmap (red = hard, green = easy)
 
 ### Desktop Client (Java)
+![Desktop Client](images/client.png)
 
 A standalone desktop app that connects over USB serial for near-zero latency input and audio feedback — no WiFi needed.
 
