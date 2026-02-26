@@ -163,15 +163,16 @@ echo PlatformIO version:
 echo.
 
 :: =============================================
-:: STEP 4: Check for USB serial port
+:: STEP 4: Select serial port
 :: =============================================
 echo Scanning for serial ports...
 echo.
 %PYTHON% -m platformio device list 2>nul
 echo.
-
-echo Do you see your board's serial port listed above?
-echo (It will show as COMx with a description like CH340 or CP2102)
+echo -----------------------------------------------
+echo Look at the list above for your board's COM port.
+echo It will show as COMx with a description like
+echo CH340 or CP2102 (e.g. COM3, COM4).
 echo.
 echo If NO ports are listed:
 echo   - Is the board plugged in via USB?
@@ -180,7 +181,17 @@ echo   - You may need a USB-serial driver:
 echo     CH340:  https://www.wch-ic.com/downloads/CH341SER_EXE.html
 echo     CP2102: https://www.silabs.com/developers/usb-to-uart-bridge-vcp-drivers
 echo.
-set /p CONTINUE="Press Enter to continue (or Ctrl+C to quit and fix): "
+echo TIP: Open Device Manager and look under
+echo      "Ports (COM ^& LPT)" to find your port.
+echo.
+set /p COM_PORT="Enter your COM port (e.g. COM3): "
+if "%COM_PORT%"=="" (
+    echo No port entered. Exiting.
+    pause
+    exit /b 1
+)
+echo.
+echo Using port: %COM_PORT%
 echo.
 
 :: =============================================
@@ -210,7 +221,7 @@ echo.
 echo [1/2] Building and uploading firmware...
 echo (First build downloads toolchains - this can take several minutes)
 echo.
-%PYTHON% -m platformio run -e %PIO_ENV% -t upload
+%PYTHON% -m platformio run -e %PIO_ENV% -t upload --upload-port %COM_PORT%
 if errorlevel 1 (
     echo.
     echo =============================================
@@ -235,7 +246,7 @@ if errorlevel 1 (
 :: =============================================
 echo.
 echo [2/2] Uploading web UI filesystem...
-%PYTHON% -m platformio run -e %PIO_ENV% -t uploadfs
+%PYTHON% -m platformio run -e %PIO_ENV% -t uploadfs --upload-port %COM_PORT%
 if errorlevel 1 (
     echo.
     echo WARNING: Filesystem upload failed. The web UI may not work,
