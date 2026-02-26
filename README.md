@@ -227,27 +227,46 @@ The script installs PlatformIO automatically, detects the serial port, and flash
 
 ### Flashing Pre-built Binaries
 
-Pre-compiled binaries are in the `bin/` folder. No build tools needed — just `esptool.py`.
+Pre-compiled binaries are in the `bin/` folder. You can flash them without building from source using either the Espressif Flash Download Tool (GUI, Windows) or esptool.py (command line, any OS).
 
-### Install esptool
+#### Flash addresses
+
+| File | Address | Contents |
+|------|---------|----------|
+| `bin/firmware.bin` | `0x0` | Firmware |
+| `bin/littlefs.bin` | `0x200000` | Web UI filesystem |
+
+Both files are needed on first flash.
+
+#### Espressif Flash Download Tool (Windows GUI)
+
+1. Download from https://www.espressif.com/en/support/download/other-tools
+2. Run `flash_download_tool_x.x.x.exe`, select **ESP8266** and **Develop**
+3. Configure:
+   - Add `bin/firmware.bin` at address `0x0` — check the box to enable
+   - Add `bin/littlefs.bin` at address `0x200000` — check the box to enable
+   - **SPI Speed**: 40MHz
+   - **SPI Mode**: DIO
+   - **Flash Size**: 32Mbit (4MB)
+   - **COM port**: select your port (check Device Manager for the COM number)
+   - **Baud**: 460800
+4. Click **START**
+5. When done, press the **RESET** button on the board
+
+#### esptool.py (command line)
 
 ```bash
 pip install esptool
 ```
 
-### Flash
-
-Connect the NodeMCU via USB, find the serial port (`/dev/ttyUSB0` on Linux, `/dev/cu.usbserial-*` on macOS, `COM3` etc. on Windows), then:
+Connect the board via USB, find the serial port (`/dev/ttyUSB0` on Linux, `/dev/cu.usbserial-*` on macOS, `COM3` etc. on Windows), then:
 
 ```bash
-# Flash firmware (address 0x0)
-esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash 0x0 bin/firmware.bin
-
-# Flash web UI filesystem (address 0x200000)
-esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash 0x200000 bin/littlefs.bin
+# Flash both in one command
+esptool.py --port /dev/ttyUSB0 --baud 460800 write_flash 0x0 bin/firmware.bin 0x200000 bin/littlefs.bin
 ```
 
-Both steps are needed on first flash.
+Press the **RESET** button on the board after flashing.
 
 ## Building from Source — Arduino IDE
 
