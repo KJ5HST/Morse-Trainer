@@ -22,7 +22,7 @@ Both boards use the same ESP-12E chip and flash layout. Pin differences are hand
 
 ### Optional
 
-- **Passive buzzer** — GPIO4/D2 (NodeMCU) or GPIO12/D6 (OLED module) — not needed if using the desktop client, which plays sidetone through your laptop speakers
+- **Passive buzzer** — GPIO4/D2 (NodeMCU) or GPIO12/D6 (OLED module) — not needed if using the desktop client, which plays sidetone through your computer's speakers
 - **LED** — GPIO5/D1 (NodeMCU) or GPIO14/D5 (OLED module) — visual morse signal
 - **OLED display** — SSD1306 (128x64 or 128x32) or SH1106 (128x64), I2C (NodeMCU only; built-in on OLED module)
 - **Morse key** — straight key or iambic paddle for keying practice
