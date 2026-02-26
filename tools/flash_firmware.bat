@@ -245,13 +245,26 @@ if errorlevel 1 (
 :: STEP 7: Upload filesystem (web UI)
 :: =============================================
 echo.
-echo [2/2] Uploading web UI filesystem...
+echo [2/2] Uploading web UI filesystem (index.html, style.css, app.js)...
+echo.
+echo Press the RESET button on the board now, then press Enter here.
+pause >nul
+echo.
 %PYTHON% -m platformio run -e %PIO_ENV% -t uploadfs --upload-port %COM_PORT%
 if errorlevel 1 (
     echo.
-    echo WARNING: Filesystem upload failed. The web UI may not work,
-    echo but the serial desktop client will still work fine.
+    echo =============================================
+    echo   Filesystem upload failed!
+    echo =============================================
     echo.
+    echo The web UI will NOT work without this step.
+    echo The desktop client (MorseClient.jar) will still work.
+    echo.
+    echo To retry just the filesystem upload, run:
+    echo   %PYTHON% -m platformio run -e %PIO_ENV% -t uploadfs --upload-port %COM_PORT%
+    echo.
+    pause
+    exit /b 1
 )
 
 echo.
