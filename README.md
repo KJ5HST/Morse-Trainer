@@ -100,7 +100,7 @@ Rebuild after changing. If you're not sure which controller your display uses, t
 
 ```
 +----------------------------+
-| 25 WPM    P1      O  RUN  |  speed, profile, tone indicator, status
+| 25 WPM    P1      O  RUN   |  speed, profile, tone indicator, status
 |                            |
 |           A                |  current character (large)
 |          .-                |  morse pattern
@@ -114,7 +114,7 @@ Rebuild after changing. If you're not sure which controller your display uses, t
 ```
 +----------------------------+
 | 25W P1   A  .-             |  speed, profile, char, pattern
-| OK       d:2 p:45       O |  result, distance, prob, tone dot
+| OK       d:2 p:45       O  |  result, distance, prob, tone dot
 +----------------------------+
 ```
 
