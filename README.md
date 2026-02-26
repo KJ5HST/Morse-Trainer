@@ -10,7 +10,7 @@ Ported from [SensorsIot/Morse-Trainer](https://github.com/SensorsIot/Morse-Train
 
 | Board | PlatformIO env | Arduino IDE define | Notes |
 |-------|---------------|-------------------|-------|
-| NodeMCU v2 (ESP-12E) | `nodemcuv2` (default) | None needed | External buzzer, LED, optional OLED |
+| NodeMCU v2 (ESP-12E) | `nodemcuv2` (default) | None needed | External peripherals, optional OLED |
 | ESP8266 0.96" OLED module v2.1.0 | `esp8266_oled` | `#define BOARD_ESP8266_OLED` | Built-in SSD1306 128x64 OLED |
 
 Both boards use the same ESP-12E chip and flash layout. Pin differences are handled in `config.h`.
@@ -18,11 +18,11 @@ Both boards use the same ESP-12E chip and flash layout. Pin differences are hand
 ### Required
 
 - **NodeMCU v2** or **ESP8266 OLED module** (see table above)
-- **Passive buzzer** — GPIO4/D2 (NodeMCU) or GPIO12/D6 (OLED module)
 - USB cable for flashing and serial
 
 ### Optional
 
+- **Passive buzzer** — GPIO4/D2 (NodeMCU) or GPIO12/D6 (OLED module) — not needed if using the desktop client, which plays sidetone through your laptop speakers
 - **LED** — GPIO5/D1 (NodeMCU) or GPIO14/D5 (OLED module) — visual morse signal
 - **OLED display** — SSD1306 (128x64 or 128x32) or SH1106 (128x64), I2C (NodeMCU only; built-in on OLED module)
 - **Morse key** — straight key or iambic paddle for keying practice
@@ -32,7 +32,7 @@ Both boards use the same ESP-12E chip and flash layout. Pin differences are hand
 
 | GPIO | NodeMCU | Function | Notes |
 |------|---------|----------|-------|
-| 4 | D2 | Buzzer (PWM) | Required |
+| 4 | D2 | Buzzer (PWM) | Optional |
 | 5 | D1 | Morse LED | Optional |
 | 2 | D4 | Status LED | On-board, active LOW |
 | 12 | D6 | OLED SDA (I2C) | Optional |
@@ -50,13 +50,13 @@ The built-in OLED uses GPIO14 (SDA) / GPIO12 (SCL), which are the same pins Node
 |------|---------|----------|-------|
 | 14 | D5 | OLED SDA (built-in) | I2C data |
 | 12 | D6 | OLED SCL (built-in) | I2C clock |
-| 4 | D2 | Buzzer (PWM) | Required |
+| 4 | D2 | Buzzer (PWM) | Optional |
 | 5 | D1 | Morse LED | Optional |
 | 2 | D4 | Status LED | On-board, active LOW |
 | 13 | D7 | Morse key / dit paddle | Optional, active LOW, internal pullup |
 | 0 | D3 | Dah paddle (iambic only) | Optional, active LOW, **do not hold during boot** |
 
-### Basic Wiring (buzzer + LED only)
+### Basic Wiring (buzzer + LED)
 
 ```
 NodeMCU          Component
