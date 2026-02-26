@@ -4,6 +4,10 @@ An adaptive Morse code trainer for the ESP8266 (NodeMCU). It sends random charac
 
 Ported from [SensorsIot/Morse-Trainer](https://github.com/SensorsIot/Morse-Trainer) (Arduino) to ESP8266 with a web UI and serial interface.
 
+| OLED Display | Web UI | Desktop Client |
+|:---:|:---:|:---:|
+| ![OLED](images/oled.png) | ![Web UI](images/browser.png) | ![Desktop Client](images/client.png) |
+
 ## Hardware
 
 ### Supported Boards
