@@ -1,7 +1,12 @@
 @echo off
 title Morse Trainer Client
 cd /d "%~dp0"
-java -jar MorseClient.jar
+java --enable-native-access=ALL-UNNAMED -jar MorseClient.jar
+if errorlevel 1 (
+    echo.
+    echo Retrying without native-access flag (Java 11-23)...
+    java -jar MorseClient.jar
+)
 if errorlevel 1 (
     echo.
     echo Java not found or wrong version.
