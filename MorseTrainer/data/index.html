@@ -3,6 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <title>Morse Trainer</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -65,20 +68,13 @@
                 </div>
             </div>
 
-            <!-- Morse display -->
+            <!-- Sent characters -->
             <div id="morse-display">
-                <div id="tone-indicator" class="off"></div>
                 <div id="sent-chars"></div>
             </div>
 
             <!-- Result feed -->
             <div id="result-feed"></div>
-
-            <!-- Keyboard input area -->
-            <div id="input-area">
-                <p>Type the character you hear:</p>
-                <input type="text" id="char-input" maxlength="1" autocomplete="off" autocapitalize="characters" disabled>
-            </div>
         </section>
 
         <!-- Probability Heatmap -->

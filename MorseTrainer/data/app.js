@@ -1,82 +1,51 @@
-// === Morse Trainer Web UI ===
+// === Morse Trainer Web UI — Config & Stats Dashboard ===
 
 (function () {
     'use strict';
 
     // --- DOM refs ---
-    const connStatus = document.getElementById('connection-status');
-    const profileSelect = document.getElementById('profile-select');
-    const speedInput = document.getElementById('speed-input');
-    const startBtn = document.getElementById('start-btn');
-    const stopBtn = document.getElementById('stop-btn');
-    const currentSpeedEl = document.getElementById('current-speed');
-    const correctCountEl = document.getElementById('correct-count');
-    const wrongCountEl = document.getElementById('wrong-count');
-    const accuracyEl = document.getElementById('accuracy');
-    const toneIndicator = document.getElementById('tone-indicator');
-    const sentCharsEl = document.getElementById('sent-chars');
-    const resultFeed = document.getElementById('result-feed');
-    const charInput = document.getElementById('char-input');
-    const heatmapEl = document.getElementById('heatmap');
+    var connStatus = document.getElementById('connection-status');
+    var profileSelect = document.getElementById('profile-select');
+    var speedInput = document.getElementById('speed-input');
+    var startBtn = document.getElementById('start-btn');
+    var stopBtn = document.getElementById('stop-btn');
+    var currentSpeedEl = document.getElementById('current-speed');
+    var correctCountEl = document.getElementById('correct-count');
+    var wrongCountEl = document.getElementById('wrong-count');
+    var accuracyEl = document.getElementById('accuracy');
+    var sentCharsEl = document.getElementById('sent-chars');
+    var resultFeed = document.getElementById('result-feed');
+    var heatmapEl = document.getElementById('heatmap');
 
     // --- State ---
-    let ws = null;
-    let audioCtx = null;
-    let oscillator = null;
-    let gainNode = null;
-    let toneActive = false;
-    let correctCount = 0;
-    let wrongCount = 0;
-    let sentChars = '';
-    let running = false;
-
-    // --- Web Audio ---
-    function initAudio() {
-        if (audioCtx) return;
-        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-        oscillator = audioCtx.createOscillator();
-        gainNode = audioCtx.createGain();
-        oscillator.type = 'sine';
-        oscillator.frequency.setValueAtTime(800, audioCtx.currentTime);
-        gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
-        oscillator.connect(gainNode);
-        gainNode.connect(audioCtx.destination);
-        oscillator.start();
-    }
-
-    function toneOn() {
-        if (!audioCtx) initAudio();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-        // Click-free ramp
-        gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
-        gainNode.gain.setTargetAtTime(0.3, audioCtx.currentTime, 0.005);
-        toneIndicator.className = 'on';
-        toneActive = true;
-    }
-
-    function toneOff() {
-        if (!audioCtx || !toneActive) return;
-        gainNode.gain.cancelScheduledValues(audioCtx.currentTime);
-        gainNode.gain.setTargetAtTime(0, audioCtx.currentTime, 0.005);
-        toneIndicator.className = 'off';
-        toneActive = false;
-    }
+    var ws = null;
+    var correctCount = 0;
+    var wrongCount = 0;
+    var sentChars = '';
+    var running = false;
 
     // --- WebSocket ---
     function connect() {
-        const host = window.location.hostname || '192.168.4.1';
-        const port = window.location.port || '80';
+        if (ws) {
+            ws.onclose = null;
+            ws.onerror = null;
+            ws.close();
+            ws = null;
+        }
+        var host = window.location.hostname || '192.168.4.1';
+        var port = window.location.port || '80';
         ws = new WebSocket('ws://' + host + ':' + port + '/ws');
 
         ws.onopen = function () {
             connStatus.textContent = 'Connected';
             connStatus.className = 'status connected';
+            send({ type: 'command', cmd: 'status' });
         };
 
         ws.onclose = function () {
             connStatus.textContent = 'Disconnected';
             connStatus.className = 'status disconnected';
-            toneOff();
+            ws = null;
             setTimeout(connect, 2000);
         };
 
@@ -100,20 +69,14 @@
     // --- Message handlers ---
     function handleMessage(msg) {
         switch (msg.type) {
-            case 'morse_element':
-                if (msg.state === 'on') toneOn();
-                else toneOff();
-                break;
-
             case 'char_sent':
                 if (msg.char && msg.char !== ' ') {
                     sentChars += msg.char;
                     if (sentChars.length > 40) sentChars = sentChars.slice(-40);
-                    sentCharsEl.textContent = sentChars;
                 } else {
                     sentChars += ' ';
-                    sentCharsEl.textContent = sentChars;
                 }
+                sentCharsEl.textContent = sentChars;
                 break;
 
             case 'result':
@@ -125,7 +88,6 @@
                     addResult('ERR: typed ' + msg.typed + ', expected ' + msg.expected, false);
                 }
                 updateStats();
-                // Request updated probabilities
                 send({ type: 'command', cmd: 'probs' });
                 break;
 
@@ -141,7 +103,6 @@
                     send({ type: 'command', cmd: 'probs' });
                 } else {
                     setRunning(false);
-                    toneOff();
                 }
                 break;
 
@@ -166,7 +127,6 @@
         div.className = 'result-entry ' + (isCorrect ? 'correct' : 'wrong');
         div.textContent = text;
         resultFeed.prepend(div);
-        // Limit entries
         while (resultFeed.children.length > 50) {
             resultFeed.removeChild(resultFeed.lastChild);
         }
@@ -185,10 +145,6 @@
         running = state;
         startBtn.disabled = state;
         stopBtn.disabled = !state;
-        charInput.disabled = !state;
-        if (state) {
-            charInput.focus();
-        }
     }
 
     // --- Heatmap ---
@@ -196,7 +152,6 @@
         heatmapEl.innerHTML = '';
         if (!data) return;
 
-        // Find max probability for scaling
         var maxProb = 1;
         for (var i = 0; i < data.length; i++) {
             if (data[i].prob > maxProb) maxProb = data[i].prob;
@@ -207,7 +162,6 @@
             var cell = document.createElement('div');
             cell.className = 'heatmap-cell';
 
-            // Color: low prob = green, high prob = red
             var ratio = item.prob / maxProb;
             var r = Math.round(233 * ratio);
             var g = Math.round(155 * (1 - ratio));
@@ -228,41 +182,11 @@
         }
     }
 
-    // --- Keyboard input ---
-    document.addEventListener('keydown', function (e) {
-        if (!running) return;
-        if (e.target.tagName === 'SELECT' || e.target.tagName === 'INPUT' && e.target.type === 'number') return;
-
-        var key = e.key;
-        if (key.length === 1 && /[a-zA-Z0-9 .,;:!?/=+\-_'"@&()]/.test(key)) {
-            e.preventDefault();
-            var ch = key.toUpperCase();
-            send({ type: 'key', char: ch });
-            charInput.value = ch;
-            // Flash input
-            charInput.style.borderColor = '#ffcc00';
-            setTimeout(function () { charInput.style.borderColor = ''; }, 150);
-        }
-    });
-
-    charInput.addEventListener('input', function () {
-        if (!running) return;
-        var ch = charInput.value.toUpperCase();
-        if (ch.length > 0) {
-            send({ type: 'key', char: ch });
-            charInput.value = '';
-        }
-    });
-
     // --- Buttons ---
     startBtn.addEventListener('click', function () {
-        initAudio();
-        if (audioCtx.state === 'suspended') audioCtx.resume();
-
         var profile = parseInt(profileSelect.value, 10);
         var speed = parseInt(speedInput.value, 10);
 
-        // Reset counters
         correctCount = 0;
         wrongCount = 0;
         sentChars = '';
@@ -275,7 +199,6 @@
 
     stopBtn.addEventListener('click', function () {
         send({ type: 'command', cmd: 'stop' });
-        toneOff();
     });
 
     // --- Init ---
