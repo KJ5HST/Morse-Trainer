@@ -24,14 +24,18 @@ run {
     standardInput = System.in
 }
 
-// Fat JAR with all dependencies bundled
 jar {
     manifest {
-        attributes 'Main-Class': 'morsetrainer.MorseClient'
+        attributes 'Main-Class': 'morsetrainer.MorseClient',
+                   'Class-Path': configurations.runtimeClasspath.collect { 'lib/' + it.name }.join(' ')
     }
-    from {
-        configurations.runtimeClasspath.collect { it.isDirectory() ? it : zipTree(it) }
-    }
-    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     archiveFileName = 'MorseClient.jar'
 }
+
+// Copy dependencies to lib/ alongside the JAR
+task copyDeps(type: Copy) {
+    from configurations.runtimeClasspath
+    into "$projectDir/lib"
+}
+
+jar.finalizedBy copyDeps
