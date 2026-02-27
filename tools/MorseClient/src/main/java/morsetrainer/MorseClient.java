@@ -392,6 +392,18 @@ public class MorseClient extends JFrame implements SerialConnection.Listener {
     // --- Main ---
 
     public static void main(String[] args) {
+        String osArch = System.getProperty("os.arch", "");
+        String osName = System.getProperty("os.name", "");
+        if (osName.toLowerCase().contains("win") && osArch.equals("aarch64")) {
+            String msg = "You have ARM64 Java installed on what is likely an x64 PC.\n\n"
+                    + "Detected: os.arch=" + osArch + "\n\n"
+                    + "Fix: Uninstall this Java, then install the x64 version from:\n"
+                    + "https://adoptium.net  (choose \"Windows x64 .msi\")\n\n"
+                    + "The app cannot run with ARM Java on an x64 machine.";
+            JOptionPane.showMessageDialog(null, msg, "Wrong Java Architecture", JOptionPane.ERROR_MESSAGE);
+            System.exit(1);
+        }
+
         try {
             UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
         } catch (Exception ignored) {}
