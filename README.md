@@ -272,6 +272,8 @@ Press the **RESET** button on the board after flashing.
 
 The `MorseTrainer/` folder is a self-contained Arduino sketch.
 
+> **Windows note**: The `MorseTrainer/` directory uses symlinks back to `src/`, `include/`, and `data/` so there's a single source of truth. On Windows, git may clone these as plain text files instead of real symlinks. If Arduino IDE can't find the source files, run `python sync_arduino.py` from the project root to copy them into `MorseTrainer/`. On macOS/Linux the symlinks work natively and the script is not needed.
+
 ### 1. Install Arduino IDE
 
 Download from https://www.arduino.cc/en/software (version 2.x recommended).
@@ -479,6 +481,7 @@ cd tools/MorseClient
 ```
 cw/
 ├── platformio.ini              # Build configuration
+├── sync_arduino.py             # Copies src/include/data into MorseTrainer/ (Windows symlink fix)
 ├── README.md                   # This file
 ├── docs/
 │   └── ORIGINAL_ANALYSIS.md    # Detailed analysis of the original Arduino code

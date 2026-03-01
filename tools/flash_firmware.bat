@@ -92,6 +92,11 @@ echo Found: %PYTHON%
 %PYTHON% --version
 echo.
 
+:: Sync Arduino IDE files (resolves symlinks on Windows)
+echo Syncing Arduino IDE files...
+%PYTHON% sync_arduino.py
+echo.
+
 :: =============================================
 :: STEP 2: Make sure pip works
 :: =============================================

@@ -33,6 +33,11 @@ OPTION B: Arduino IDE
   The MorseTrainer/ folder is a complete Arduino sketch you can open
   and compile directly.
 
+  Windows users: Git may clone the MorseTrainer/ symlinks as plain text
+  files. If Arduino IDE can't find the source files, run this first:
+    python sync_arduino.py
+  (from the project root folder)
+
   1. Install Arduino IDE 2.x
        https://www.arduino.cc/en/software
 
