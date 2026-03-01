@@ -270,9 +270,29 @@ Press the **RESET** button on the board after flashing.
 
 ## Building from Source — Arduino IDE
 
-The `MorseTrainer/` folder is a self-contained Arduino sketch.
+The `MorseTrainer/` folder is a self-contained Arduino sketch. On macOS and Linux it uses symlinks back to the main `src/`, `include/`, and `data/` directories, so everything stays in sync automatically.
 
-> **Windows note**: The `MorseTrainer/` directory uses symlinks back to `src/`, `include/`, and `data/` so there's a single source of truth. On Windows, git may clone these as plain text files instead of real symlinks. If Arduino IDE can't find the source files, run `python sync_arduino.py` from the project root to copy them into `MorseTrainer/`. On macOS/Linux the symlinks work natively and the script is not needed.
+### Windows: Sync files first
+
+On Windows, git clones the symlinks as plain text files instead of real links (unless you have Developer Mode enabled with `git config core.symlinks true`). You need to copy the real source files into `MorseTrainer/` before opening the sketch.
+
+**Option A** — Double-click `sync_arduino.bat` in the project root (or run it from a terminal).
+
+**Option B** — Run the Python script directly:
+
+```
+python sync_arduino.py
+```
+
+**Option C** — Use the flash tool, which syncs automatically before building:
+
+```
+tools\flash_firmware.bat
+```
+
+> `flash_firmware.bat` runs `sync_arduino.py`, installs PlatformIO if needed, builds, and flashes both firmware and filesystem in one step. If you use it, you can skip the rest of this section.
+
+Re-run `sync_arduino.py` any time you pull new changes from GitHub.
 
 ### 1. Install Arduino IDE
 
@@ -481,6 +501,7 @@ cd tools/MorseClient
 ```
 cw/
 ├── platformio.ini              # Build configuration
+├── sync_arduino.bat            # Double-click wrapper for sync_arduino.py (Windows)
 ├── sync_arduino.py             # Copies src/include/data into MorseTrainer/ (Windows symlink fix)
 ├── README.md                   # This file
 ├── docs/
