@@ -1,30 +1,93 @@
-// === Morse Trainer Web UI — Config & Stats Dashboard ===
-
 (function () {
     'use strict';
 
     // --- DOM refs ---
-    var connStatus = document.getElementById('connection-status');
     var profileSelect = document.getElementById('profile-select');
     var speedInput = document.getElementById('speed-input');
     var startBtn = document.getElementById('start-btn');
     var stopBtn = document.getElementById('stop-btn');
-    var currentSpeedEl = document.getElementById('current-speed');
-    var correctCountEl = document.getElementById('correct-count');
-    var wrongCountEl = document.getElementById('wrong-count');
-    var accuracyEl = document.getElementById('accuracy');
-    var sentCharsEl = document.getElementById('sent-chars');
-    var resultFeed = document.getElementById('result-feed');
-    var heatmapEl = document.getElementById('heatmap');
+    var wpmLabel = document.getElementById('wpm-label');
+    var kbEl = document.getElementById('kb');
+    var connDot = document.getElementById('conn-dot');
+    var connDotPortrait = document.getElementById('conn-dot-portrait');
 
-    // --- State ---
-    var ws = null;
-    var correctCount = 0;
-    var wrongCount = 0;
-    var sentChars = '';
-    var running = false;
+    // --- Keyboard layers ---
+    var LAYER_ALPHA = [
+        ['Q','W','E','R','T','Y','U','I','O','P'],
+        ['A','S','D','F','G','H','J','K','L'],
+        ['Z','X','C','V','B','N','M']
+    ];
+    var LAYER_NUM = [
+        ['1','2','3','4','5','6','7','8','9','0'],
+        ['+','-','.',',','/',':', '=','?','('],
+        [')','"','\'','@','!','&']
+    ];
+
+    var currentLayer = 0; // 0 = alpha, 1 = num
+
+    function buildKeyboard() {
+        var layers = currentLayer === 0 ? LAYER_ALPHA : LAYER_NUM;
+        var toggleLabel = currentLayer === 0 ? '123' : 'ABC';
+        kbEl.innerHTML = '';
+
+        for (var r = 0; r < layers.length; r++) {
+            var rowDiv = document.createElement('div');
+            rowDiv.className = 'kb-row';
+            var row = layers[r];
+            for (var c = 0; c < row.length; c++) {
+                var btn = document.createElement('button');
+                btn.className = 'key';
+                btn.textContent = row[c];
+                btn.dataset.char = row[c];
+                rowDiv.appendChild(btn);
+            }
+            kbEl.appendChild(rowDiv);
+        }
+
+        // Toggle row
+        var toggleRow = document.createElement('div');
+        toggleRow.className = 'kb-row';
+        var toggleBtn = document.createElement('button');
+        toggleBtn.className = 'key key-toggle';
+        toggleBtn.textContent = toggleLabel;
+        toggleBtn.dataset.toggle = '1';
+        toggleRow.appendChild(toggleBtn);
+        kbEl.appendChild(toggleRow);
+    }
+
+    // --- Keyboard input via event delegation ---
+    kbEl.addEventListener('pointerdown', function (e) {
+        var btn = e.target.closest('.key');
+        if (!btn) return;
+        e.preventDefault();
+
+        if (btn.dataset.toggle) {
+            currentLayer = currentLayer === 0 ? 1 : 0;
+            buildKeyboard();
+            return;
+        }
+
+        if (btn.dataset.char) {
+            send({ type: 'key', char: btn.dataset.char });
+        }
+    });
+
+    // Physical / bluetooth keyboard support
+    document.addEventListener('keydown', function (e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT') return;
+        if (e.metaKey || e.ctrlKey || e.altKey) return;
+
+        var ch = e.key;
+        if (ch.length === 1 && /[a-zA-Z0-9+\-.,\/:=?()'"@!&]/.test(ch)) {
+            e.preventDefault();
+            send({ type: 'key', char: ch.toUpperCase() });
+        }
+    });
 
     // --- WebSocket ---
+    var ws = null;
+    var running = false;
+
     function connect() {
         if (ws) {
             ws.onclose = null;
@@ -37,14 +100,12 @@
         ws = new WebSocket('ws://' + host + ':' + port + '/ws');
 
         ws.onopen = function () {
-            connStatus.textContent = 'Connected';
-            connStatus.className = 'status connected';
+            setConnected(true);
             send({ type: 'command', cmd: 'status' });
         };
 
         ws.onclose = function () {
-            connStatus.textContent = 'Disconnected';
-            connStatus.className = 'status disconnected';
+            setConnected(false);
             ws = null;
             setTimeout(connect, 2000);
         };
@@ -66,134 +127,80 @@
         }
     }
 
-    // --- Message handlers ---
+    function setConnected(state) {
+        var cls = state ? 'conn-dot connected' : 'conn-dot';
+        connDot.className = cls;
+        connDotPortrait.className = cls;
+    }
+
+    // --- Message handling ---
     function handleMessage(msg) {
         switch (msg.type) {
-            case 'char_sent':
-                if (msg.char && msg.char !== ' ') {
-                    sentChars += msg.char;
-                    if (sentChars.length > 40) sentChars = sentChars.slice(-40);
-                } else {
-                    sentChars += ' ';
-                }
-                sentCharsEl.textContent = sentChars;
-                break;
-
             case 'result':
-                if (msg.correct) {
-                    correctCount++;
-                    addResult('OK: ' + msg.typed, true);
-                } else {
-                    wrongCount++;
-                    addResult('ERR: typed ' + msg.typed + ', expected ' + msg.expected, false);
-                }
-                updateStats();
-                send({ type: 'command', cmd: 'probs' });
-                break;
-
-            case 'speed_change':
-                currentSpeedEl.textContent = msg.speed;
-                addResult('Speed ' + msg.direction + ' to ' + msg.speed + ' WPM', msg.direction === 'up');
+                flash(msg.correct);
                 break;
 
             case 'session':
                 if (msg.state === 'started') {
                     setRunning(true);
-                    currentSpeedEl.textContent = msg.speed || speedInput.value;
-                    send({ type: 'command', cmd: 'probs' });
+                    updateSpeed(msg.speed || speedInput.value);
                 } else {
                     setRunning(false);
                 }
                 break;
 
-            case 'context_lost':
-                addResult('Context lost! Speed down to ' + msg.speed + ' WPM', false);
-                currentSpeedEl.textContent = msg.speed;
-                break;
-
-            case 'probs':
-                updateHeatmap(msg.data);
+            case 'speed_change':
+                updateSpeed(msg.speed);
                 break;
 
             case 'status':
                 if (msg.running) setRunning(true);
-                currentSpeedEl.textContent = msg.speed;
+                else setRunning(false);
+                updateSpeed(msg.speed);
+                if (msg.profile !== undefined) {
+                    profileSelect.value = msg.profile;
+                }
+                break;
+
+            case 'context_lost':
+                updateSpeed(msg.speed);
+                flash(false);
                 break;
         }
     }
 
-    function addResult(text, isCorrect) {
-        var div = document.createElement('div');
-        div.className = 'result-entry ' + (isCorrect ? 'correct' : 'wrong');
-        div.textContent = text;
-        resultFeed.prepend(div);
-        while (resultFeed.children.length > 50) {
-            resultFeed.removeChild(resultFeed.lastChild);
-        }
+    // --- Flash feedback ---
+    var flashTimer = null;
+
+    function flash(correct) {
+        var cls = correct ? 'flash-correct' : 'flash-wrong';
+        document.body.classList.remove('flash-correct', 'flash-wrong');
+        // Force reflow so re-adding the class triggers the visual change
+        void document.body.offsetWidth;
+        document.body.classList.add(cls);
+
+        clearTimeout(flashTimer);
+        flashTimer = setTimeout(function () {
+            document.body.classList.remove(cls);
+        }, 300);
     }
 
-    function updateStats() {
-        correctCountEl.textContent = correctCount;
-        wrongCountEl.textContent = wrongCount;
-        var total = correctCount + wrongCount;
-        if (total > 0) {
-            accuracyEl.textContent = Math.round((correctCount / total) * 100);
-        }
-    }
-
+    // --- UI state ---
     function setRunning(state) {
         running = state;
         startBtn.disabled = state;
         stopBtn.disabled = !state;
     }
 
-    // --- Heatmap ---
-    function updateHeatmap(data) {
-        heatmapEl.innerHTML = '';
-        if (!data) return;
-
-        var maxProb = 1;
-        for (var i = 0; i < data.length; i++) {
-            if (data[i].prob > maxProb) maxProb = data[i].prob;
-        }
-
-        for (var j = 0; j < data.length; j++) {
-            var item = data[j];
-            var cell = document.createElement('div');
-            cell.className = 'heatmap-cell';
-
-            var ratio = item.prob / maxProb;
-            var r = Math.round(233 * ratio);
-            var g = Math.round(155 * (1 - ratio));
-            var b = 30;
-            cell.style.background = 'rgb(' + r + ',' + g + ',' + b + ')';
-
-            var charSpan = document.createElement('span');
-            charSpan.className = 'char';
-            charSpan.textContent = item.char;
-
-            var probSpan = document.createElement('span');
-            probSpan.className = 'prob';
-            probSpan.textContent = item.prob;
-
-            cell.appendChild(charSpan);
-            cell.appendChild(probSpan);
-            heatmapEl.appendChild(cell);
-        }
+    function updateSpeed(speed) {
+        speedInput.value = speed;
+        wpmLabel.textContent = speed + ' WPM';
     }
 
     // --- Buttons ---
     startBtn.addEventListener('click', function () {
         var profile = parseInt(profileSelect.value, 10);
         var speed = parseInt(speedInput.value, 10);
-
-        correctCount = 0;
-        wrongCount = 0;
-        sentChars = '';
-        sentCharsEl.textContent = '';
-        resultFeed.innerHTML = '';
-        updateStats();
-
         send({ type: 'command', cmd: 'start', profile: profile, speed: speed });
     });
 
@@ -202,5 +209,6 @@
     });
 
     // --- Init ---
+    buildKeyboard();
     connect();
 })();
