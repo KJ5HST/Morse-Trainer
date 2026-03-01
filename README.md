@@ -62,10 +62,12 @@ The built-in OLED uses GPIO14 (SDA) / GPIO12 (SCL), which are the same pins Node
 ```
 NodeMCU          Component
 -------          ---------
-D2 (GPIO4) ----> Passive Buzzer (+)
-GND        ----> Passive Buzzer (-)
+D2 (GPIO4) --[1K]--> NPN Base      NPN Collector <-- Buzzer (-)
+                      NPN Emitter --> GND              Buzzer (+) <-- 3V3 or 5V (Vin)
 D1 (GPIO5) ----> LED anode (with 220-470 ohm resistor to GND)
 ```
+
+> **Buzzer driver required**: Passive electromagnetic buzzers (e.g. model 12085) have low impedance (16–42 ohms) and draw 80–200mA — far more than an ESP8266 GPIO can source (~12mA). Connecting one directly will produce only faint clicks. Use an NPN transistor (2N2222, S8050, or similar) as a switch: GPIO through a 1K resistor to the base, buzzer between collector and 3.3V (or 5V via the Vin pin for more volume), emitter to GND. Piezoelectric buzzers draw very little current and can be driven directly from the GPIO without a transistor.
 
 ### OLED Display Wiring
 
