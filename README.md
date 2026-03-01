@@ -399,14 +399,14 @@ During training, just type characters to respond — no Enter needed.
 
 1. Connect to the **MorseTrainer** WiFi network (password: `morsecode`)
 2. Open a browser to **http://192.168.4.1** (or http://morse.local if mDNS works on your OS)
-3. Select a profile and speed, click **Start Training**
-4. Listen to the tones in your browser and type what you hear
+3. Select a profile and speed, click **Start**
+4. Listen to the tones from the buzzer and type what you hear
 
 The web UI has:
-- Real-time audio via Web Audio API (click-free sine wave tones)
-- Live stats (speed, accuracy, correct/wrong counts)
-- Color-coded result feed
-- Character probability heatmap (red = hard, green = easy)
+- Profile and speed selection
+- **Pitch slider** — adjusts the buzzer tone frequency (300–1200 Hz, default 700 Hz)
+- On-screen QWERTY keyboard with number/punctuation layer toggle
+- Border flash feedback (green = correct, red = wrong)
 
 ### Desktop Client (Java)
 ![Desktop Client](images/client.png)
