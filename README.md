@@ -5,6 +5,34 @@ An adaptive Morse code trainer for the ESP8266 (NodeMCU). It sends random charac
 
 Ported from [SensorsIot/Morse-Trainer](https://github.com/SensorsIot/Morse-Trainer) (Arduino) to ESP8266 with a web UI and serial interface.
 
+## Table of Contents
+
+- [Hardware](#hardware)
+  - [Supported Boards](#supported-boards)
+  - [Pin Maps](#nodemcu-v2-pin-map)
+  - [Basic Wiring (buzzer + LED)](#basic-wiring-buzzer--led)
+  - [OLED Display Wiring](#oled-display-wiring)
+  - [Morse Key Wiring](#morse-key-wiring)
+- [Computer Setup](#computer-setup)
+  - [USB Driver](#usb-driver)
+  - [Finding Your Serial Port](#finding-your-serial-port)
+- [Flashing the Firmware](#flashing-the-firmware)
+  - [Windows Quick Flash](#windows-quick-flash)
+  - [Flashing Pre-built Binaries](#flashing-pre-built-binaries)
+- [Building from Source — Arduino IDE](#building-from-source--arduino-ide)
+  - [Windows: Sync files first](#windows-sync-files-first)
+- [Building from Source — PlatformIO](#building-from-source--platformio-alternative)
+- [Usage](#usage)
+  - [Serial Interface](#serial-interface)
+  - [Web UI](#web-ui)
+  - [Desktop Client (Java)](#desktop-client-java)
+  - [Profiles](#profiles)
+  - [How the Training Works](#how-the-training-works)
+- [Project Structure](#project-structure)
+- [Customizing the Display](#customizing-the-display)
+- [WiFi Configuration](#wifi-configuration)
+- [License](#license)
+
 ## Hardware
 
 ### Supported Boards
