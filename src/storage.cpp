@@ -30,6 +30,7 @@ bool Storage::saveConfig(const Config& cfg) {
     JsonDocument doc;
     doc["speed"] = cfg.speed;
     doc["profile"] = cfg.profile;
+    doc["buzzerActive"] = cfg.buzzerActive;
     doc["wifiMode"] = cfg.wifiMode;
     doc["staSSID"] = cfg.staSSID;
     doc["staPass"] = cfg.staPass;
@@ -52,6 +53,7 @@ bool Storage::loadConfig(Config& cfg) {
 
     cfg.speed = doc["speed"] | DEFAULT_SPEED;
     cfg.profile = doc["profile"] | DEFAULT_PROFILE;
+    cfg.buzzerActive = doc["buzzerActive"] | BUZZER_ACTIVE_DEFAULT;
     cfg.wifiMode = doc["wifiMode"] | "ap";
     cfg.staSSID = doc["staSSID"] | "";
     cfg.staPass = doc["staPass"] | "";

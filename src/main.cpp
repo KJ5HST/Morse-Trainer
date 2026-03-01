@@ -35,6 +35,13 @@ void setup() {
         Serial.println(F("LittleFS mount failed!"));
     }
 
+    // Load config and apply buzzer type
+    {
+        Storage::Config cfg;
+        Storage::loadConfig(cfg);
+        Buzzer::setActive(cfg.buzzerActive);
+    }
+
     // Morse engine
     MorseEngine::begin();
     MorseEngine::onElement(onMorseElement);

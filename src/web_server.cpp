@@ -52,6 +52,15 @@ static void handleWebSocketMessage(AsyncWebSocketClient* client, uint8_t* data, 
                 Buzzer::setFrequency(freq);
             }
         }
+        else if (strcmp(cmd, "buzzer_type") == 0) {
+            bool active = doc["active"] | true;
+            Buzzer::setActive(active);
+            // Persist
+            Storage::Config cfg;
+            Storage::loadConfig(cfg);
+            cfg.buzzerActive = active;
+            Storage::saveConfig(cfg);
+        }
         else if (strcmp(cmd, "status") == 0) {
             // Send status response
             JsonDocument resp;
@@ -60,6 +69,7 @@ static void handleWebSocketMessage(AsyncWebSocketClient* client, uint8_t* data, 
             resp["speed"] = trainer.getSpeed();
             resp["profile"] = trainer.getProfile();
             resp["pitch"] = Buzzer::getFrequency();
+            resp["buzzerActive"] = Buzzer::isActive();
 
             String out;
             serializeJson(resp, out);

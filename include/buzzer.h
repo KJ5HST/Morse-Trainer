@@ -9,4 +9,6 @@ namespace Buzzer {
     bool isOn();
     void setFrequency(int hz);
     int getFrequency();
+    void setActive(bool active);
+    bool isActive();
 }

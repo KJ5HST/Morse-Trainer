@@ -15,6 +15,7 @@ namespace Storage {
     struct Config {
         int speed = DEFAULT_SPEED;
         int profile = DEFAULT_PROFILE;
+        bool buzzerActive = BUZZER_ACTIVE_DEFAULT;
         String wifiMode = "ap";      // "ap" or "sta"
         String staSSID = "";
         String staPass = "";

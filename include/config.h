@@ -63,6 +63,7 @@
 
 // --- Buzzer ---
 #define TONE_FREQ       800 // Hz
+#define BUZZER_ACTIVE_DEFAULT true
 
 // --- Morse Timing ---
 #define DASH_TICKS      2   // dash length in ticks (counted from 0)

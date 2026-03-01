@@ -29,10 +29,18 @@
             <button id="stop-btn" disabled>Stop</button>
             <span id="wpm-label">25 WPM</span>
         </div>
-        <div class="settings-row">
+        <div class="settings-row" id="pitch-row">
             <label for="pitch-slider" class="slider-label">Pitch</label>
             <input type="range" id="pitch-slider" min="300" max="1200" value="700" step="10">
             <span id="pitch-value" class="slider-value">700 Hz</span>
+        </div>
+        <div class="settings-row">
+            <label class="slider-label">Buzzer</label>
+            <label class="toggle">
+                <input type="checkbox" id="buzzer-active" checked>
+                <span class="toggle-slider"></span>
+            </label>
+            <span id="buzzer-label" class="slider-value">Active</span>
         </div>
     </div>
 

@@ -12,6 +12,9 @@
     var connDotPortrait = document.getElementById('conn-dot-portrait');
     var pitchSlider = document.getElementById('pitch-slider');
     var pitchValue = document.getElementById('pitch-value');
+    var pitchRow = document.getElementById('pitch-row');
+    var buzzerActive = document.getElementById('buzzer-active');
+    var buzzerLabel = document.getElementById('buzzer-label');
 
     // --- Keyboard layers ---
     var LAYER_ALPHA = [
@@ -93,6 +96,19 @@
         send({ type: 'command', cmd: 'pitch', freq: freq });
     });
 
+    // --- Buzzer type toggle ---
+    function updateBuzzerUI(active) {
+        buzzerActive.checked = active;
+        buzzerLabel.textContent = active ? 'Active' : 'Passive';
+        pitchRow.style.display = active ? 'none' : 'flex';
+    }
+
+    buzzerActive.addEventListener('change', function () {
+        var active = buzzerActive.checked;
+        updateBuzzerUI(active);
+        send({ type: 'command', cmd: 'buzzer_type', active: active });
+    });
+
     // --- WebSocket ---
     var ws = null;
     var running = false;
@@ -172,6 +188,9 @@
                 if (msg.pitch !== undefined) {
                     pitchSlider.value = msg.pitch;
                     pitchValue.textContent = msg.pitch + ' Hz';
+                }
+                if (msg.buzzerActive !== undefined) {
+                    updateBuzzerUI(msg.buzzerActive);
                 }
                 break;
 
