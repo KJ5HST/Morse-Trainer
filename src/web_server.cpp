@@ -160,8 +160,10 @@ void WebServer::begin() {
     ws.onEvent(onWsEvent);
     server.addHandler(&ws);
 
-    // Serve static files from LittleFS
-    server.serveStatic("/", LittleFS, "/").setDefaultFile("index.html");
+    // Serve static files from LittleFS — no browser caching
+    server.serveStatic("/", LittleFS, "/")
+        .setDefaultFile("index.html")
+        .setCacheControl("no-cache, no-store, must-revalidate");
 
     server.begin();
     Serial.println(F("HTTP server started"));
