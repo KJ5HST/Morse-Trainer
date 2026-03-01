@@ -7,4 +7,6 @@ namespace Buzzer {
     void toneOn();
     void toneOff();
     bool isOn();
+    void setFrequency(int hz);
+    int getFrequency();
 }

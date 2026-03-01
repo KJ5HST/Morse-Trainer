@@ -113,6 +113,27 @@ body.flash-wrong { border-color: var(--wrong); }
     white-space: nowrap;
 }
 
+.slider-label {
+    width: 40px;
+    font-size: 14px;
+    color: var(--text-dim);
+    flex-shrink: 0;
+}
+
+#pitch-slider {
+    flex: 1;
+    min-width: 0;
+    accent-color: var(--surface2);
+}
+
+.slider-value {
+    width: 52px;
+    font-size: 14px;
+    color: var(--text-dim);
+    text-align: right;
+    flex-shrink: 0;
+}
+
 /* Keyboard */
 #kb {
     flex: 1;

@@ -10,6 +10,8 @@
     var kbEl = document.getElementById('kb');
     var connDot = document.getElementById('conn-dot');
     var connDotPortrait = document.getElementById('conn-dot-portrait');
+    var pitchSlider = document.getElementById('pitch-slider');
+    var pitchValue = document.getElementById('pitch-value');
 
     // --- Keyboard layers ---
     var LAYER_ALPHA = [
@@ -82,6 +84,13 @@
             e.preventDefault();
             send({ type: 'key', char: ch.toUpperCase() });
         }
+    });
+
+    // --- Pitch slider ---
+    pitchSlider.addEventListener('input', function () {
+        var freq = parseInt(pitchSlider.value, 10);
+        pitchValue.textContent = freq + ' Hz';
+        send({ type: 'command', cmd: 'pitch', freq: freq });
     });
 
     // --- WebSocket ---
@@ -159,6 +168,10 @@
                 updateSpeed(msg.speed);
                 if (msg.profile !== undefined) {
                     profileSelect.value = msg.profile;
+                }
+                if (msg.pitch !== undefined) {
+                    pitchSlider.value = msg.pitch;
+                    pitchValue.textContent = msg.pitch + ' Hz';
                 }
                 break;
 

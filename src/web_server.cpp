@@ -2,6 +2,7 @@
 #include "config.h"
 #include "storage.h"
 #include "morse_engine.h"
+#include "buzzer.h"
 
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
@@ -45,6 +46,12 @@ static void handleWebSocketMessage(AsyncWebSocketClient* client, uint8_t* data, 
             int speed = doc["speed"] | trainer.getSpeed();
             trainer.setSpeed(speed);
         }
+        else if (strcmp(cmd, "pitch") == 0) {
+            int freq = doc["freq"] | Buzzer::getFrequency();
+            if (freq >= 300 && freq <= 1200) {
+                Buzzer::setFrequency(freq);
+            }
+        }
         else if (strcmp(cmd, "status") == 0) {
             // Send status response
             JsonDocument resp;
@@ -52,6 +59,7 @@ static void handleWebSocketMessage(AsyncWebSocketClient* client, uint8_t* data, 
             resp["running"] = trainer.isRunning();
             resp["speed"] = trainer.getSpeed();
             resp["profile"] = trainer.getProfile();
+            resp["pitch"] = Buzzer::getFrequency();
 
             String out;
             serializeJson(resp, out);
