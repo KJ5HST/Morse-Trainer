@@ -42,9 +42,8 @@ static void onTrainerEvent(const TrainerEvent& evt) {
     OledDisplay::onTrainerEvent(evt);
 }
 
-// Morse element callback — broadcasts tone on/off to web and OLED
+// Morse element callback — updates OLED keying indicator
 static void onMorseElement(bool on) {
-    WebServer::broadcastMorseElement(on);
     OledDisplay::onMorseElement(on);
 }
 
@@ -59,6 +58,13 @@ void setup() {
     // Storage
     if (!Storage::begin()) {
         Serial.println(F("LittleFS mount failed!"));
+    }
+
+    // Load config and apply buzzer type
+    {
+        Storage::Config cfg;
+        Storage::loadConfig(cfg);
+        Buzzer::setActive(cfg.buzzerActive);
     }
 
     // Morse engine
