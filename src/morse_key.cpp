@@ -1,42 +1,9 @@
 #include "morse_key.h"
+#include "morse_table.h"
 #include "config.h"
 #include "buzzer.h"
 #include "trainer.h"
 #include "morse_engine.h"
-
-// --- Morse decode tree (same table as morse_engine) ---
-static const int morseTreetop = 63;
-static const char morseTable[] PROGMEM =
-    "*5*H*4*S***V*3*I***F***U?*_**2*E*&*L\"**R*+.****A***P@**W***J'1* *6-B*=*D*/"
-    "*X***N***C;(!K***Y***T*7*Z**,G***Q***M:8*!***O*9***0*";
-
-// Decode a dot/dash pattern string to a character using the morse tree.
-// Returns '\0' if not found.
-static char decodePattern(const char* pattern) {
-    int pos = morseTreetop; // root of tree (1-based index = 64, 0-based = 63)
-    for (int i = 0; pattern[i]; i++) {
-        int level = 0;
-        int tmp = pos + 1; // convert to 1-based for tree math
-        // Find which level we're at
-        for (level = 0; level < 6; level++) {
-            if (((tmp + (1 << level)) % (2 << level)) == 0) break;
-        }
-        // Can't descend further
-        if (level == 0) return '\0';
-
-        int step = (1 << (level - 1));
-        if (pattern[i] == '.') {
-            pos -= step;
-        } else if (pattern[i] == '-') {
-            pos += step;
-        } else {
-            return '\0';
-        }
-    }
-    if (pos < 0 || pos >= (morseTreetop * 2 + 1)) return '\0';
-    char ch = pgm_read_byte(morseTable + pos);
-    return (ch == '*') ? '\0' : ch;
-}
 
 // --- Timing helpers ---
 static inline unsigned long ditTimeMs() {
@@ -102,7 +69,7 @@ void MorseKey::update() {
 
         if (idle > 3 * dit) {
             // Character gap — decode and submit
-            char ch = decodePattern(patternBuf);
+            char ch = morseDecode(patternBuf);
             if (ch) {
                 trainer.processInput(ch);
             }
@@ -167,7 +134,7 @@ void MorseKey::update() {
                 // No paddle pressed — check for character/word gap
                 unsigned long idle = now - releaseTime;
                 if (idle > 3 * dit) {
-                    char ch = decodePattern(patternBuf);
+                    char ch = morseDecode(patternBuf);
                     if (ch) {
                         trainer.processInput(ch);
                     }

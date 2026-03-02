@@ -1,23 +1,33 @@
 #include "morse_engine.h"
+#include "morse_table.h"
 #include "config.h"
 #include "buzzer.h"
 
-// --- Morse binary tree table (from original MTR_V2) ---
-// ITU with punctuation (without non-english characters)
-static const int morseTreetop = 63;
-static const char morseTable[] PROGMEM =
-    "*5*H*4*S***V*3*I***F***U?*_**2*E*&*L\"**R*+.****A***P@**W***J'1* *6-B*=*D*/"
-    "*X***N***C;(!K***Y***T*7*Z**,G***Q***M:8*!***O*9***0*";
-
-static const int morseTableLength = (morseTreetop * 2) + 1;
-static const int morseTreeLevels = 6; // log2(64) = 6
+// --- FSM states ---
+enum MorseFsmState {
+    FSM_CHECK_OUTPUT = 1,
+    FSM_OUTPUT_LOW,
+    FSM_OUTPUT_HIGH,
+    FSM_FIRST_ON,
+    FSM_CHAR_GAP,
+    FSM_WORD_GAP,
+    FSM_NEXT_ON,
+    FSM_DASH_TIMING,
+    FSM_DOT_DONE,
+    FSM_CHAR_GAP_WAIT,
+    FSM_CHAR_DONE,
+    FSM_WORD_GAP_WAIT,
+    FSM_WORD_DONE,
+    FSM_DASH_DONE,
+    FSM_DASH_TICK,
+};
 
 // --- State ---
 static volatile char morseSignalString[7];
 static volatile bool sendingMorse = false;
 static volatile int tick;
-static volatile bool ex = false;
-static volatile int stat;
+static volatile bool stepped = false;
+static volatile MorseFsmState fsmState;
 static volatile int morseSignals;
 static volatile int morseSignalPos;
 static volatile int currentSpeed = DEFAULT_SPEED;
@@ -36,7 +46,7 @@ void MorseEngine::begin() {
     digitalWrite(MORSE_LED_PIN, LOW);
     Buzzer::begin();
     sendingMorse = false;
-    stat = 1;
+    fsmState = FSM_CHECK_OUTPUT;
 }
 
 void MorseEngine::onElement(MorseElementCB cb) {
@@ -55,8 +65,8 @@ void MorseEngine::setSpeed(int wpm) {
     if (wpm < MIN_SPEED) wpm = MIN_SPEED;
     if (wpm > MAX_SPEED) wpm = MAX_SPEED;
     currentSpeed = wpm;
-    // Tick interval: 6000/wpm ms (matching original: TIMER_MULT * 6 / value microseconds -> 6000/wpm ms)
-    unsigned long interval = 6000UL / wpm;
+    // Tick interval: 6000/wpm ms (rounded to nearest)
+    unsigned long interval = (6000UL + wpm / 2) / wpm;
     if (interval < 1) interval = 1;
     morseTicker.detach();
     morseTicker.attach_ms(interval, transmitMorse);
@@ -66,47 +76,8 @@ int MorseEngine::getSpeed() {
     return currentSpeed;
 }
 
-String MorseEngine::getPattern(char ch) {
-    // Convert to uppercase
-    if (ch > 96) ch -= 32;
-
-    // Find character in morse table
-    int i;
-    for (i = 0; i < morseTableLength; i++) {
-        if (pgm_read_byte(morseTable + i) == ch) break;
-    }
-    if (i >= morseTableLength) return "";
-
-    int morseTablePos = i + 1; // 1-based
-
-    // Find level in binary tree
-    int test;
-    int startLevel;
-    for (startLevel = 0; startLevel < morseTreeLevels; startLevel++) {
-        test = (morseTablePos + (1 << startLevel)) % (2 << startLevel);
-        if (test == 0) break;
-    }
-    int numSignals = morseTreeLevels - startLevel;
-
-    if (numSignals <= 0) return " "; // space character
-
-    char buf[7];
-    int pos = 0;
-    int tPos = morseTablePos;
-
-    for (int j = startLevel; j < morseTreeLevels; j++) {
-        int add = (1 << j);
-        test = (tPos + add) / (2 << j);
-        if (test & 1) {
-            tPos += add;
-            buf[numSignals - 1 - pos++] = '.';
-        } else {
-            tPos -= add;
-            buf[numSignals - 1 - pos++] = '-';
-        }
-    }
-    buf[pos] = '\0';
-    return String(buf);
+int MorseEngine::getPattern(char ch, char* buf) {
+    return morseEncode(ch, buf);
 }
 
 void MorseEngine::sendLetter(char encodeMorseChar) {
@@ -114,163 +85,137 @@ void MorseEngine::sendLetter(char encodeMorseChar) {
     if (encodeMorseChar > 96) encodeMorseChar -= 32;
     currentChar = encodeMorseChar;
 
-    // Find character in morse table
-    int i;
-    for (i = 0; i < morseTableLength; i++) {
-        if (pgm_read_byte(morseTable + i) == encodeMorseChar) break;
-    }
-    int morseTablePos = i + 1; // 1-based
+    char buf[7];
+    int n = morseEncode(encodeMorseChar, buf);
 
-    // Find level in binary tree
-    int test;
-    int startLevel;
-    for (startLevel = 0; startLevel < morseTreeLevels; startLevel++) {
-        test = (morseTablePos + (1 << startLevel)) % (2 << startLevel);
-        if (test == 0) break;
+    if (n == 0) {
+        // Character not found — treat as space
+        buf[0] = ' ';
+        buf[1] = '\0';
+        n = 1;
     }
-    morseSignals = morseTreeLevels - startLevel;
+
+    // Copy to volatile signal string
+    for (int i = 0; i <= n; i++) {
+        morseSignalString[i] = buf[i];
+    }
+    morseSignals = n;
     morseSignalPos = 0;
 
-    if (morseSignals > 0) {
-        // Build morse signal string (backwards from last to first)
-        int pos = 0;
-        int tPos = morseTablePos;
-        for (int j = startLevel; j < morseTreeLevels; j++) {
-            int add = (1 << j);
-            test = (tPos + add) / (2 << j);
-            if (test & 1) {
-                tPos += add;
-                morseSignalString[morseSignals - 1 - pos++] = '.';
-            } else {
-                tPos -= add;
-                morseSignalString[morseSignals - 1 - pos++] = '-';
-            }
-        }
-        morseSignalString[pos] = '\0';
-    } else {
-        // Space character
-        morseSignalString[0] = ' ';
-        morseSignalString[1] = '\0';
-        morseSignalPos = 0;
-        morseSignals = 1;
-    }
-
-    ex = false;
-    stat = 1;
-    morseSignalPos = 0;
+    stepped = false;
+    fsmState = FSM_CHECK_OUTPUT;
     sendingMorse = true;
 }
 
 // --- 15-state FSM (faithful port of original transmitMorse ISR) ---
-static void IRAM_ATTR transmitMorse() {
-    // Run one step of the FSM per tick (ex flag controls single-step)
-    ex = false;
-    while (!ex && sendingMorse) {
-        switch (stat) {
-            case 1: // Check if output is LOW or HIGH
-                if (digitalRead(MORSE_LED_PIN) == LOW) stat = 2;
-                else stat = 3;
+static void transmitMorse() {
+    stepped = false;
+    while (!stepped && sendingMorse) {
+        switch (fsmState) {
+            case FSM_CHECK_OUTPUT:
+                if (digitalRead(MORSE_LED_PIN) == LOW) fsmState = FSM_OUTPUT_LOW;
+                else fsmState = FSM_OUTPUT_HIGH;
                 break;
 
-            case 2: // Output is LOW — decide what to do next
-                stat = 7; // default: turn on
-                if (morseSignalPos == 0) stat = 4;  // first element
-                if (morseSignalString[morseSignalPos] == '\0') stat = 5; // end of char
-                if (morseSignalString[0] == ' ') stat = 6; // space
+            case FSM_OUTPUT_LOW:
+                fsmState = FSM_NEXT_ON; // default: turn on next element
+                if (morseSignalPos == 0) fsmState = FSM_FIRST_ON;
+                if (morseSignalString[morseSignalPos] == '\0') fsmState = FSM_CHAR_GAP;
+                if (morseSignalString[0] == ' ') fsmState = FSM_WORD_GAP;
                 break;
 
-            case 3: // Output is HIGH — check dot or dash
-                if (morseSignalString[morseSignalPos] == '.') stat = 9;
-                else stat = 8;
+            case FSM_OUTPUT_HIGH:
+                if (morseSignalString[morseSignalPos] == '.') fsmState = FSM_DOT_DONE;
+                else fsmState = FSM_DASH_TIMING;
                 break;
 
-            case 4: // First element — turn ON
+            case FSM_FIRST_ON:
                 digitalWrite(MORSE_LED_PIN, HIGH);
                 Buzzer::toneOn();
                 if (elementCB) elementCB(true);
-                stat = 3;
-                ex = true;
+                fsmState = FSM_OUTPUT_HIGH;
+                stepped = true;
                 tick = 0;
                 break;
 
-            case 5: // End of character — wait inter-char gap
-                if (tick < END_TICKS) stat = 10;
-                else stat = 11;
+            case FSM_CHAR_GAP:
+                if (tick < END_TICKS) fsmState = FSM_CHAR_GAP_WAIT;
+                else fsmState = FSM_CHAR_DONE;
                 break;
 
-            case 6: // Space — wait word gap
-                if (tick < SPACE_TICKS) stat = 12;
-                else stat = 13;
+            case FSM_WORD_GAP:
+                if (tick < SPACE_TICKS) fsmState = FSM_WORD_GAP_WAIT;
+                else fsmState = FSM_WORD_DONE;
                 break;
 
-            case 7: // Subsequent element — turn ON
+            case FSM_NEXT_ON:
                 digitalWrite(MORSE_LED_PIN, HIGH);
                 Buzzer::toneOn();
                 if (elementCB) elementCB(true);
-                ex = true;
-                stat = 3;
+                stepped = true;
+                fsmState = FSM_OUTPUT_HIGH;
                 break;
 
-            case 8: // Dash timing
-                if (tick < DASH_TICKS) stat = 15;
-                else stat = 14;
+            case FSM_DASH_TIMING:
+                if (tick < DASH_TICKS) fsmState = FSM_DASH_TICK;
+                else fsmState = FSM_DASH_DONE;
                 break;
 
-            case 9: // Dot done — turn OFF, advance
+            case FSM_DOT_DONE:
                 digitalWrite(MORSE_LED_PIN, LOW);
                 Buzzer::toneOff();
                 if (elementCB) elementCB(false);
                 morseSignalPos++;
-                stat = 2;
-                ex = true;
+                fsmState = FSM_OUTPUT_LOW;
+                stepped = true;
                 break;
 
-            case 10: // Waiting inter-char gap
+            case FSM_CHAR_GAP_WAIT:
                 tick++;
-                stat = 5;
-                ex = true;
+                fsmState = FSM_CHAR_GAP;
+                stepped = true;
                 break;
 
-            case 11: // Inter-char gap done — character finished
+            case FSM_CHAR_DONE:
                 tick = 0;
-                ex = true;
+                stepped = true;
                 sendingMorse = false;
                 if (charDoneCB) charDoneCB(currentChar);
                 break;
 
-            case 12: // Waiting word gap
+            case FSM_WORD_GAP_WAIT:
                 tick++;
-                stat = 6;
-                ex = true;
+                fsmState = FSM_WORD_GAP;
+                stepped = true;
                 break;
 
-            case 13: // Word gap done
+            case FSM_WORD_DONE:
                 tick = 0;
                 sendingMorse = false;
-                ex = true;
+                stepped = true;
                 if (charDoneCB) charDoneCB(currentChar);
                 break;
 
-            case 14: // Dash done — turn OFF, advance
+            case FSM_DASH_DONE:
                 digitalWrite(MORSE_LED_PIN, LOW);
                 Buzzer::toneOff();
                 if (elementCB) elementCB(false);
                 tick = 0;
                 morseSignalPos++;
-                stat = 1;
-                ex = true;
+                fsmState = FSM_CHECK_OUTPUT;
+                stepped = true;
                 break;
 
-            case 15: // Dash timing tick
+            case FSM_DASH_TICK:
                 tick++;
-                stat = 8;
-                ex = true;
+                fsmState = FSM_DASH_TIMING;
+                stepped = true;
                 break;
 
             default:
-                stat = 1;
+                fsmState = FSM_CHECK_OUTPUT;
                 break;
         }
     }
-    ex = false;
+    stepped = false;
 }

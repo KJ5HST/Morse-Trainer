@@ -24,7 +24,7 @@ namespace MorseEngine {
     void setSpeed(int wpm);
     int  getSpeed();
 
-    // Look up the morse pattern string (dots/dashes) for a character
-    // Returns empty string if not found.
-    String getPattern(char ch);
+    // Look up the morse pattern string (dots/dashes) for a character.
+    // Writes to buf (must be >= 7 bytes). Returns pattern length, 0 if not found.
+    int getPattern(char ch, char* buf);
 }

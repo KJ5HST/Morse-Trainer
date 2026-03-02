@@ -187,7 +187,7 @@ void OledDisplay::onTrainerEvent(const TrainerEvent& evt) {
     switch (evt.type) {
         case TrainerEvent::CHAR_SENT:
             dChar = evt.sentChar;
-            strncpy(dPattern, evt.pattern.c_str(), sizeof(dPattern) - 1);
+            strncpy(dPattern, evt.pattern, sizeof(dPattern) - 1);
             dPattern[sizeof(dPattern) - 1] = '\0';
             dQueueDist = evt.queueDist;
             dResultValid = false;

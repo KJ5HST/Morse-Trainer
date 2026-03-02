@@ -16,9 +16,8 @@ static void onTrainerEvent(const TrainerEvent& evt) {
     OledDisplay::onTrainerEvent(evt);
 }
 
-// Morse element callback — broadcasts tone on/off to web and OLED
+// Morse element callback — updates OLED keying indicator
 static void onMorseElement(bool on) {
-    WebServer::broadcastMorseElement(on);
     OledDisplay::onMorseElement(on);
 }
 

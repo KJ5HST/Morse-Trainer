@@ -67,21 +67,34 @@ static void processCommand(const String& cmd) {
         Serial.println(F("Training stopped."));
     }
     else if (cmd.startsWith("/speed")) {
-        int sp = cmd.substring(7).toInt();
-        if (sp >= MIN_SPEED && sp <= MAX_SPEED) {
-            trainer.setSpeed(sp);
-            Serial.print(F("Speed set to ")); Serial.println(sp);
+        String arg = cmd.substring(6);
+        arg.trim();
+        if (arg.length() == 0) {
+            Serial.print(F("Current speed: ")); Serial.print(trainer.getSpeed());
+            Serial.println(F(" WPM"));
         } else {
-            Serial.println(F("Speed must be 20-200"));
+            int sp = arg.toInt();
+            if (sp >= MIN_SPEED && sp <= MAX_SPEED) {
+                trainer.setSpeed(sp);
+                Serial.print(F("Speed set to ")); Serial.println(sp);
+            } else {
+                Serial.println(F("Speed must be 20-200"));
+            }
         }
     }
     else if (cmd.startsWith("/profile")) {
-        int p = cmd.substring(9).toInt();
-        if (p >= 0 && p <= 9) {
-            trainer.setProfile(p);
-            Serial.print(F("Profile set to ")); Serial.println(p);
+        String arg = cmd.substring(8);
+        arg.trim();
+        if (arg.length() == 0) {
+            Serial.print(F("Current profile: ")); Serial.println(trainer.getProfile());
         } else {
-            Serial.println(F("Profile must be 0-9"));
+            int p = arg.toInt();
+            if (p >= 0 && p <= 9) {
+                trainer.setProfile(p);
+                Serial.print(F("Profile set to ")); Serial.println(p);
+            } else {
+                Serial.println(F("Profile must be 0-9"));
+            }
         }
     }
     else if (cmd.startsWith("/status")) {

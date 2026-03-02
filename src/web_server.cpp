@@ -14,6 +14,9 @@ static AsyncWebServer server(80);
 static AsyncWebSocket ws("/ws");
 
 static void handleWebSocketMessage(AsyncWebSocketClient* client, uint8_t* data, size_t len) {
+    // Reject oversized messages to protect heap
+    if (len > 256) return;
+
     // Parse JSON message
     JsonDocument doc;
     DeserializationError err = deserializeJson(doc, data, len);
@@ -99,19 +102,11 @@ static void handleWebSocketMessage(AsyncWebSocketClient* client, uint8_t* data, 
 static void onWsEvent(AsyncWebSocket* server, AsyncWebSocketClient* client,
                        AwsEventType type, void* arg, uint8_t* data, size_t len) {
     switch (type) {
-        case WS_EVT_CONNECT: {
+        case WS_EVT_CONNECT:
             Serial.printf("[WS] Client #%u connected from %s (heap: %u, clients: %u)\n",
                           client->id(), client->remoteIP().toString().c_str(),
                           ESP.getFreeHeap(), ws.count());
-            // Close any older connections from the same IP (stale after refresh)
-            IPAddress newIP = client->remoteIP();
-            for (auto& c : ws.getClients()) {
-                if (c->id() != client->id() && c->remoteIP() == newIP) {
-                    c->close();
-                }
-            }
             break;
-        }
         case WS_EVT_DISCONNECT:
             Serial.printf("[WS] Client #%u disconnected (heap: %u)\n",
                           client->id(), ESP.getFreeHeap());
@@ -188,12 +183,8 @@ void WebServer::begin() {
 }
 
 void WebServer::update() {
-    ws.cleanupClients();
+    ws.cleanupClients(4);
     MDNS.update();
-}
-
-void WebServer::broadcastMorseElement(bool on) {
-    (void)on; // No longer sent to web clients
 }
 
 void WebServer::onTrainerEvent(const TrainerEvent& evt) {

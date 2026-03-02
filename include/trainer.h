@@ -17,7 +17,7 @@ struct TrainerEvent {
 
     // CHAR_SENT
     char sentChar;
-    String pattern;
+    char pattern[8];
     int queueDist;
 
     // RESULT
@@ -28,7 +28,7 @@ struct TrainerEvent {
 
     // SPEED_CHANGE
     int speed;
-    String direction; // "up" or "down"
+    const char* direction;
 
     // SESSION_STATE
     bool running;
@@ -67,7 +67,7 @@ public:
 private:
     TrainerEventCB _eventCB = nullptr;
 
-    uint8_t _charProp[CHAR_COUNT];
+    uint8_t _charProb[CHAR_COUNT];
     bool _plainText = false;
     bool _running = false;
     int _speed = DEFAULT_SPEED;
@@ -80,6 +80,7 @@ private:
     int _lGroup = 0;       // letters in current group
     int _statErrors = 0;
     int _statGroup = 0;
+    int _recoverySpaces = 0; // pending spaces after context lost (drained non-blockingly)
 
     int queueDist() const;
     int indexAdv(int index) const;

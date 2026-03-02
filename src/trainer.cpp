@@ -6,7 +6,7 @@
 Trainer trainer;
 
 void Trainer::begin() {
-    memset(_charProp, 0, sizeof(_charProp));
+    memset(_charProb, 0, sizeof(_charProb));
     memset(_queue, ' ', sizeof(_queue));
     _running = false;
     _plainText = false;
@@ -15,6 +15,7 @@ void Trainer::begin() {
     _lGroup = 0;
     _statErrors = 0;
     _statGroup = 0;
+    _recoverySpaces = 0;
 }
 
 void Trainer::onEvent(TrainerEventCB cb) {
@@ -29,6 +30,7 @@ void Trainer::start(int profile, int speed) {
     _lGroup = 0;
     _statErrors = 0;
     _statGroup = 0;
+    _recoverySpaces = 0;
     _plainText = false;
 
     _speed = constrain(speed, MIN_SPEED, MAX_SPEED);
@@ -50,10 +52,11 @@ void Trainer::stop() {
     _running = false;
 
     // Save probabilities
-    Storage::saveProbs(_charProp);
+    Storage::saveProbs(_charProb);
 
-    // Save config
+    // Save config (load first to preserve WiFi/buzzer settings)
     Storage::Config cfg;
+    Storage::loadConfig(cfg);
     cfg.speed = _speed;
     cfg.profile = _profile;
     Storage::saveConfig(cfg);
@@ -72,6 +75,13 @@ bool Trainer::isRunning() const {
 void Trainer::update() {
     if (!_running) return;
     if (MorseEngine::isSending()) return;
+
+    // Drain recovery spaces non-blockingly (one per tick)
+    if (_recoverySpaces > 0) {
+        MorseEngine::sendLetter(' ');
+        _recoverySpaces--;
+        return;
+    }
 
     sendNextChar();
 
@@ -101,7 +111,7 @@ void Trainer::sendNextChar() {
     TrainerEvent evt;
     evt.type = TrainerEvent::CHAR_SENT;
     evt.sentChar = ch;
-    evt.pattern = MorseEngine::getPattern(ch);
+    MorseEngine::getPattern(ch, evt.pattern);
     evt.queueDist = queueDist();
     emitEvent(evt);
 
@@ -152,7 +162,7 @@ int Trainer::getProfile() const {
 }
 
 const uint8_t* Trainer::getProbs() const {
-    return _charProp;
+    return _charProb;
 }
 
 bool Trainer::isPlainText() const {
@@ -193,7 +203,7 @@ int Trainer::indexAdv(int index) const {
 char Trainer::generateLetter() {
     int totProb = 0;
     for (int i = 0; i < CHAR_COUNT; i++) {
-        totProb += _charProp[i];
+        totProb += _charProb[i];
     }
     if (totProb == 0) return 'E'; // fallback
 
@@ -201,7 +211,7 @@ char Trainer::generateLetter() {
     int sum = 0;
     int index = 0;
     while (sum <= pointer && index < CHAR_COUNT) {
-        sum += _charProp[index];
+        sum += _charProb[index];
         index++;
     }
     return (char)(FIRST_CHAR + index - 1);
@@ -209,9 +219,9 @@ char Trainer::generateLetter() {
 
 void Trainer::correct(char letter) {
     int idx = letter - FIRST_CHAR;
-    if (idx >= 0 && idx < CHAR_COUNT && _charProp[idx] != 0 && !_plainText) {
-        if (_charProp[idx] <= 1 + DOWN_PROP) _charProp[idx] = 1;
-        else _charProp[idx] -= DOWN_PROP;
+    if (idx >= 0 && idx < CHAR_COUNT && _charProb[idx] != 0 && !_plainText) {
+        if (_charProb[idx] <= 1 + DOWN_PROP) _charProb[idx] = 1;
+        else _charProb[idx] -= DOWN_PROP;
     }
 
     TrainerEvent evt;
@@ -219,7 +229,7 @@ void Trainer::correct(char letter) {
     evt.correct = true;
     evt.typedChar = letter;
     evt.expectedChar = letter;
-    evt.prob = (idx >= 0 && idx < CHAR_COUNT) ? _charProp[idx] : 0;
+    evt.prob = (idx >= 0 && idx < CHAR_COUNT) ? _charProb[idx] : 0;
     emitEvent(evt);
 }
 
@@ -227,11 +237,11 @@ void Trainer::wrong(char typed, char expected) {
     int h1 = typed - FIRST_CHAR;
     int h2 = expected - FIRST_CHAR;
 
-    if (h1 >= 0 && h1 < CHAR_COUNT && _charProp[h1] != 0 && !_plainText) {
-        _charProp[h1] = min(100, _charProp[h1] + UP_PROP);
+    if (h1 >= 0 && h1 < CHAR_COUNT && _charProb[h1] != 0 && !_plainText) {
+        _charProb[h1] = min(100, _charProb[h1] + UP_PROP);
     }
-    if (h2 >= 0 && h2 < CHAR_COUNT && _charProp[h2] != 0 && !_plainText) {
-        _charProp[h2] = min(100, _charProp[h2] + UP_PROP);
+    if (h2 >= 0 && h2 < CHAR_COUNT && _charProb[h2] != 0 && !_plainText) {
+        _charProb[h2] = min(100, _charProb[h2] + UP_PROP);
     }
 
     _statErrors++;
@@ -241,7 +251,7 @@ void Trainer::wrong(char typed, char expected) {
     evt.correct = false;
     evt.typedChar = typed;
     evt.expectedChar = expected;
-    evt.prob = (h1 >= 0 && h1 < CHAR_COUNT) ? _charProp[h1] : 0;
+    evt.prob = (h1 >= 0 && h1 < CHAR_COUNT) ? _charProb[h1] : 0;
     emitEvent(evt);
 }
 
@@ -286,28 +296,25 @@ void Trainer::contextLost() {
     _queueIndexS = 0;
     _statGroup = 0;
 
-    // Send spaces to give trainee time to recover
-    for (int i = 0; i < 5; i++) {
-        MorseEngine::sendLetter(' ');
-        while (MorseEngine::isSending()) { yield(); }
-    }
+    // Queue recovery spaces (drained non-blockingly by update())
+    _recoverySpaces = 5;
 }
 
 void Trainer::loadProfile(int profile) {
     if (profile == 0) {
         // Load saved probabilities
-        if (!Storage::loadProbs(_charProp)) {
+        if (!Storage::loadProbs(_charProb)) {
             // Fallback to P1 if no saved data
             const uint8_t* p = ::getProfile(1);
             for (int i = 0; i < CHAR_COUNT; i++) {
-                _charProp[i] = pgm_read_byte(p + i);
+                _charProb[i] = pgm_read_byte(p + i);
             }
         }
     } else {
         const uint8_t* p = ::getProfile(profile);
         if (p) {
             for (int i = 0; i < CHAR_COUNT; i++) {
-                _charProp[i] = pgm_read_byte(p + i);
+                _charProb[i] = pgm_read_byte(p + i);
             }
         }
         // P2 enables plainText mode (probabilities stay constant)
