@@ -5,8 +5,9 @@
 // ===================================================================
 // Board Selection
 // ===================================================================
-// Uncomment ONE board, or pass -DBOARD_xxx as a PlatformIO build flag.
-// Default: BOARD_NODEMCU
+// PlatformIO: select board via build environment (build flags handle it).
+// Arduino IDE: uncomment your board below. This file is preserved across
+//              sync_arduino runs, so your edits won't be overwritten.
 //
 // #define BOARD_NODEMCU           // NodeMCU v2 with external peripherals
 // #define BOARD_ESP8266_OLED      // ESP8266 0.96" OLED module v2.1.0
@@ -63,7 +64,7 @@
 
 // --- Buzzer ---
 #define TONE_FREQ       800 // Hz
-#define BUZZER_ACTIVE_DEFAULT true
+#define BUZZER_ACTIVE_DEFAULT true  // true=active (DC), false=passive (PWM tone)
 
 // --- Morse Timing ---
 #define DASH_TICKS      2   // dash length in ticks (counted from 0)
