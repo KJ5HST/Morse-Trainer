@@ -20,3 +20,6 @@ Thumbs.db
 
 # Session logs
 morse_session_*.csv
+
+# Dashboard
+dashboard.html
